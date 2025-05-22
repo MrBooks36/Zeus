@@ -16,7 +16,9 @@ def get_bootloader_path():
         return 'D:/'
     return ''
 
-def delete_log_files(folder_path):
+def delete_log_files():
+    if platform.system() == 'Windows': folder_path = 'c:'
+    elif platform.system() == 'Linux': folder_path = '/'
     bootloader = get_bootloader_path()
     try:
         for dirpath, dirnames, filenames in os.walk(folder_path):
@@ -64,6 +66,9 @@ def main():
             clean_path = os.path.join(bootloader, 'clean')
             if os.path.exists(clean_path):
                 delete_log_files()
+
+            if os.path.exists(bootloader):
+                os.chdir(bootloader)    
 
             process = subprocess.Popen(['python', file_path])
 

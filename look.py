@@ -1,8 +1,9 @@
+import cv2
+from ohbotfix import ohbot
+from time import sleep, time
+import random
+
 def look():
-    import cv2
-    from ohbotfix import ohbot
-    from time import sleep, time
-    import random
 
     ohbot.reset()
 
@@ -47,7 +48,6 @@ def look():
                 ohbot.move(ohbot.HEADNOD, 10 - faceY, 10)
                 ohbot.move(ohbot.EYETURN, faceX, 10)
                 ohbot.move(ohbot.EYETILT, faceY, 10)
-
                 break
 
             current_time = time()

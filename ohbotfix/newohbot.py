@@ -17,7 +17,7 @@ import re
 import csv
 import requests
 
-file_path = os.path.dirname(sys.modules["__main__"].__file__)
+folder_path = os.path.dirname(sys.modules["__main__"].__file__)
 
 AccessUri = "https://westeurope.api.cognitive.microsoft.com/sts/v1.0/issueToken"
 SynthesizeUri = "https://westeurope.tts.speech.microsoft.com/cognitiveservices/v1"
@@ -44,13 +44,13 @@ defaultEyeShape = ''
 eyeShapeLeft = ''
 eyeShapeRight = ''
 eyeShapeFile = ''
-speechAudioFile = f'{file_path}/ohbotData/ohbotspeech.wav'
-ohbotMotorDefFile = f'{file_path}/ohbotData/MotorDefinitionsv21.omd'
-soundFolder = f'{file_path}/ohbotData/Sounds'
+speechAudioFile = f'{folder_path}/ohbotData/ohbotspeech.wav'
+ohbotMotorDefFile = f'{folder_path}/ohbotData/MotorDefinitionsv21.omd'
+soundFolder = f'{folder_path}/ohbotData/Sounds'
 synthesizer = ''
 voice = ''
 language = 'en-GB' # Language/Accent for GTTS web text to speech.
-settingsFile = f'{file_path}/ohbotData/OhbotSettings.xml' # String to hold location of settings file
+settingsFile = f'{folder_path}/ohbotData/OhbotSettings.xml' # String to hold location of settings file
 speechGender = "Female"
 # This is passed in to setsynthesizer
 cogServicesID = ''
@@ -59,7 +59,7 @@ cogServicesID = ''
 directory = os.path.dirname(os.path.abspath(__file__))
 
 # name of directory that holds eye shape, motor definition and speech db files.
-dirName = f'{file_path}/ohbotData'
+dirName = f'{folder_path}/ohbotData'
 
 # Global variable to turn on and off printing debug info.
 debug = False
@@ -103,7 +103,7 @@ phraseList = []
 port = ""
 
 # define library version
-version = "4.0.14"
+version = "4.0.15"
 
 # flag to stop writing when writing for threading
 writing = False
@@ -122,7 +122,7 @@ except FileExistsError:
     pass
 
 # Copy settings file
-if not path.exists(f'{file_path}/ohbotData/OhbotSettings.xml'):
+if not path.exists(f'{folder_path}/ohbotData/OhbotSettings.xml'):
     shutil.copyfile(os.path.join(directory, "OhbotSettings.xml"), settingsFile)
     if debug:
         print("Copied Ohbot Settings from :" + directory + " to ohbotData/")
@@ -454,17 +454,17 @@ def _generateSpeechFile(text):
             tts = gTTS(text=text, lang=language, slow=False)
 
             # Saving the converted audio in a wav file named sample
-            tts.save(f'{file_path}/ohbotData/ohbotspeech.mp3')
-            sound = AudioSegment.from_mp3(f'{file_path}/ohbotData/ohbotspeech.mp3')
-            sound.export(f'{file_path}/ohbotData/ohbotspeech.wav', format="wav")
+            tts.save(f'{folder_path}/ohbotData/ohbotspeech.mp3')
+            sound = AudioSegment.from_mp3(f'{folder_path}/ohbotData/ohbotspeech.mp3')
+            sound.export(f'{folder_path}/ohbotData/ohbotspeech.wav', format="wav")
         else:
             # Remove any characters that are unsafe for a subprocess call
             safetext = re.sub(r'[^ .a-zA-Z0-9?\']+', '', text)
                       
             if synthesizer.upper() == "FESTIVAL":
-                bashcommand = "festival -b '(set! mytext (Utterance Text " + '"' + safetext + '"))' + "' '(utt.synth mytext)' '(utt.save.wave mytext " + f'"{file_path}/ohbotData/ohbotspeech.wav")' + "' '(utt.save.segs mytext " + f'"{file_path}/ohbotData/phonemes"' + ")'"
+                bashcommand = "festival -b '(set! mytext (Utterance Text " + '"' + safetext + '"))' + "' '(utt.synth mytext)' '(utt.save.wave mytext " + f'"{folder_path}/ohbotData/ohbotspeech.wav")' + "' '(utt.save.segs mytext " + f'"{folder_path}/ohbotData/phonemes"' + ")'"
             else:
-                bashcommand = synthesizer + f' -w {file_path}/ohbotData/ohbotspeech.wav ' + voice + ' "' + safetext + '"'
+                bashcommand = synthesizer + f' -w {folder_path}/ohbotData/ohbotspeech.wav ' + voice + ' "' + safetext + '"'
                 
             # Execute bash command.
             subprocess.call(bashcommand, shell=True)
@@ -866,7 +866,7 @@ def say(text, untilDone=True, lipSync=True, hdmiAudio=False, soundDelay=0):
         
         # Open the text file containing the phonemes
 
-        f = open(f"{file_path}/ohbotData/phonemes", 'r')
+        f = open(f"{folder_path}/ohbotData/phonemes", 'r')
 
         # Empty the lists that contain phoneme data and reset count
         phonemes = []
@@ -996,10 +996,10 @@ def _playSpeech(addSilence):
 
     if platform.system() == "Linux":
         if addSilence:
-            commandString = 'aplay -D plug:default ' + silenceFile + f'\naplay {file_path}/ohbotData/ohbotspeech.wav'
+            commandString = 'aplay -D plug:default ' + silenceFile + f'\naplay {folder_path}/ohbotData/ohbotspeech.wav'
             os.system(commandString)
         else:
-            os.system(f'aplay -D plug:default "{file_path}/ohbotData/ohbotspeech.wav"')
+            os.system(f'aplay -D plug:default "{folder_path}/ohbotData/ohbotspeech.wav"')
 
 
 # Function to set lipTopPos and lipBottomPos global variables to lip positions
