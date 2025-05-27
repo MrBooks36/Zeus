@@ -9,10 +9,30 @@ import pyaudio
 import sys
 from platform import system
 import speech_recognition as sr
-
+import re
 
 CHAT_HISTORY_FILE = os.path.join(os.path.dirname(sys.modules["__main__"].__file__), "chat_history.json")
 VOSK_MODEL_PATH = os.path.join(os.path.expanduser("~"), "Documents", "vosk-model")
+
+def remove_emojis(input_string):
+    # Emoji pattern to match code points in the emoji ranges
+    emoji_pattern = re.compile(
+        "[\U0001F600-\U0001F64F"  # emoticons
+        "\U0001F300-\U0001F5FF"  # symbols & pictographs
+        "\U0001F680-\U0001F6FF"  # transport & map symbols
+        "\U0001F700-\U0001F77F"  # alchemical symbols
+        "\U0001F780-\U0001F7FF"  # Geometric Shapes Extended
+        "\U0001F800-\U0001F8FF"  # Supplemental Arrows-C
+        "\U0001F900-\U0001F9FF"  # Supplemental Symbols and Pictographs
+        "\U0001FA00-\U0001FA6F"  # Chess Symbols
+        "\U0001FA70-\U0001FAFF"  # Symbols and Pictographs Extended-A
+        "\U00002700-\U000027BF"  # Dingbats
+        "\U000024C2-\U0001F251"  # Enclosed characters
+        "\U0001F000-\U0001F02F"  # Mahjong Tiles
+        "\U0001F0A0-\U0001F0FF"  # Playing cards
+        "]+", flags=re.UNICODE
+    )
+    return emoji_pattern.sub(r'', input_string)
 
 def get_user():
     home_users = [d for d in os.listdir("/home") if os.path.isdir(os.path.join("/home", d))]
@@ -114,7 +134,8 @@ def ai(USE_SPEECH_RECOGNITION):
                 isload = 1
                 thr.join()
 
-                say = response['message']['content']
+                say = str(response['message']['content'])
+                say = remove_emojis(say.replace('*', ''))
                 print(say)
 
                 chat_history.append({'role': 'assistant', 'content': say})
