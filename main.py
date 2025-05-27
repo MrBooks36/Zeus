@@ -1,6 +1,9 @@
 from threading import Thread
 from ohbotfix import ohbot
-from . import ai, look
+from ai import ai
+from look import look
+from os.path import exists
+import requests
 ohbot.reset()
 ohbot.detach(ohbot.HEADTURN)
 ohbot.detach(ohbot.HEADROLL)
@@ -8,7 +11,12 @@ ohbot.detach(ohbot.HEADROLL)
 thr = Thread(target=look, daemon=True)
 thr.start()
 
-import requests
+def start_ai(pram):
+   try:
+    ai(pram)
+   except Exception as e:
+      with open('ERROR.txt', 'w') as file: 
+        file.write(str(e))
 
 def is_site_up(url):
     try:
@@ -19,13 +27,15 @@ def is_site_up(url):
         # If there is any request exception, the site is considered down.
         return False
 
-website_url = "https://speech.googleapis.com"
-ohbot.say('Playing ping pong with Larry Page')
-if is_site_up(website_url):
+if not exists('vosk'):
+ website_url = "https://speech.googleapis.com"
+ ohbot.say('Playing ping pong with Larry Page')
+ if is_site_up(website_url):
     print(f"{website_url} is up.")
     ohbot.say('connected')
-    ai(True)
-else:
+    start_ai(True)
+ else:
     print(f"{website_url} is down.")
     ohbot.say('ha ha i won')
-    ai(False)
+    start_ai(False)
+else: start_ai(False)

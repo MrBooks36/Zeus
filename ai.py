@@ -17,10 +17,10 @@ VOSK_MODEL_PATH = os.path.join(os.path.expanduser("~"), "Documents", "vosk-model
 def remove_emojis(input_string):
     # Emoji pattern to match code points in the emoji ranges
     emoji_pattern = re.compile(
-        "[\U0001F600-\U0001F64F"  # emoticons
-        "\U0001F300-\U0001F5FF"  # symbols & pictographs
-        "\U0001F680-\U0001F6FF"  # transport & map symbols
-        "\U0001F700-\U0001F77F"  # alchemical symbols
+        "[\U0001F600-\U0001F64F" # Emoticons
+        "\U0001F300-\U0001F5FF"  # Symbols & pictographs
+        "\U0001F680-\U0001F6FF"  # Transport & map symbols
+        "\U0001F700-\U0001F77F"  # Alchemical symbols
         "\U0001F780-\U0001F7FF"  # Geometric Shapes Extended
         "\U0001F800-\U0001F8FF"  # Supplemental Arrows-C
         "\U0001F900-\U0001F9FF"  # Supplemental Symbols and Pictographs
@@ -95,8 +95,15 @@ def transcribe_with_speech_recognition():
                 yield text
             except sr.UnknownValueError:
                 continue
+            except: 
+                ohbot.say('google craped its dacks, restart with Vosk')
+                print('google craped its dacks, restart with Vosk')
+                with open('vosk', 'w') as file:
+                    file.close()
+                return
 
 def ai(USE_SPEECH_RECOGNITION):
+    os.system('ollama run zeus "reply with nothing"') #start ollama
     global isload
     isload = 0
     chat_history = load_chat_history()
