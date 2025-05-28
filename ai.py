@@ -100,6 +100,10 @@ def transcribe_with_speech_recognition():
                 print('google craped its dacks, restart with Vosk')
                 with open('vosk', 'w') as file:
                     file.close()
+                if system() == 'Linux':
+                    _tmp = os.system(f'unmount /media/{get_user()}/bootloader')
+                    if _tmp == 0: ohbot.say('ejected')
+                    else: ohbot.say('failed to eject')    
                 return
 
 def ai(USE_SPEECH_RECOGNITION):
