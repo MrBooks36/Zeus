@@ -1,5 +1,5 @@
 import cv2
-from ohbotfix import ohbot
+from ohbot import ohbot
 from time import sleep, time
 import random
 
@@ -12,8 +12,12 @@ def look():
     faceCascade = cv2.CascadeClassifier(cascPath)
 
     print("Initializing camera")
-    video_capture = cv2.VideoCapture(0)
-
+    video_capture = cv2.VideoCapture(1)
+    # Try to use the front camera (usually camera index 1 or higher)
+    # If not available, fallback to default camera (index 0)
+    if not video_capture.isOpened():
+        print("Camera 1 not found, trying camera 0")
+        video_capture = cv2.VideoCapture(0)
     if video_capture.isOpened():
         print("Camera Initialized")
         ohbot.setEyeColour(g=10, r=0, b=0)

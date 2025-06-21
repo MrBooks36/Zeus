@@ -1,4 +1,4 @@
-from ohbotfix import ohbot
+from ohbot import ohbot
 import ollama
 import os
 from time import sleep
@@ -7,29 +7,28 @@ from threading import Thread
 from vosk import Model, KaldiRecognizer
 import pyaudio
 import sys
-from platform import system
 import speech_recognition as sr
 import re
+ohbot.setVoice('-vDavid')
 
 CHAT_HISTORY_FILE = os.path.join(os.path.dirname(sys.modules["__main__"].__file__), "chat_history.json")
 VOSK_MODEL_PATH = os.path.join(os.path.expanduser("~"), "Documents", "vosk-model")
 
 def remove_emojis(input_string):
-    # Emoji pattern to match code points in the emoji ranges
     emoji_pattern = re.compile(
-        "[\U0001F600-\U0001F64F" # Emoticons
-        "\U0001F300-\U0001F5FF"  # Symbols & pictographs
-        "\U0001F680-\U0001F6FF"  # Transport & map symbols
-        "\U0001F700-\U0001F77F"  # Alchemical symbols
-        "\U0001F780-\U0001F7FF"  # Geometric Shapes Extended
-        "\U0001F800-\U0001F8FF"  # Supplemental Arrows-C
-        "\U0001F900-\U0001F9FF"  # Supplemental Symbols and Pictographs
-        "\U0001FA00-\U0001FA6F"  # Chess Symbols
-        "\U0001FA70-\U0001FAFF"  # Symbols and Pictographs Extended-A
-        "\U00002700-\U000027BF"  # Dingbats
-        "\U000024C2-\U0001F251"  # Enclosed characters
-        "\U0001F000-\U0001F02F"  # Mahjong Tiles
-        "\U0001F0A0-\U0001F0FF"  # Playing cards
+        "[\U0001F600-\U0001F64F"
+        "\U0001F300-\U0001F5FF"
+        "\U0001F680-\U0001F6FF"
+        "\U0001F700-\U0001F77F"
+        "\U0001F780-\U0001F7FF"
+        "\U0001F800-\U0001F8FF"
+        "\U0001F900-\U0001F9FF"
+        "\U0001FA00-\U0001FA6F"
+        "\U0001FA70-\U0001FAFF"
+        "\U00002700-\U000027BF"
+        "\U000024C2-\U0001F251"
+        "\U0001F000-\U0001F02F"
+        "\U0001F0A0-\U0001F0FF"
         "]+", flags=re.UNICODE
     )
     return emoji_pattern.sub(r'', input_string)
@@ -75,7 +74,6 @@ def transcribe_with_vosk():
                 text = json.loads(result).get('text', '')
                 yield text
     except GeneratorExit:
-        # Handle generator cleanup
         stream.stop_stream()
     finally:
         stream.close()
@@ -95,23 +93,19 @@ def transcribe_with_speech_recognition():
                 yield text
             except sr.UnknownValueError:
                 continue
-            except: 
-                ohbot.say('google craped its dacks, restart with Vosk')
-                print('google craped its dacks, restart with Vosk')
+            except SystemExit: pass
+            except:
+                ohbot.say('Google crashed. Restart with Vosk.')
+                print('Google crashed. Restart with Vosk.')
                 with open('vosk', 'w') as file:
                     file.close()
-                if system() == 'Linux':
-                    _tmp = os.system(f'unmount /media/{get_user()}/bootloader')
-                    if _tmp == 0: ohbot.say('ejected')
-                    else: ohbot.say('failed to eject')    
+
                 return
 
 def ai(USE_SPEECH_RECOGNITION):
-    os.system('ollama run zeus "reply with nothing"') #start ollama
     global isload
     isload = 0
     chat_history = load_chat_history()
-
 
     transcription_generator = (
         transcribe_with_speech_recognition() if USE_SPEECH_RECOGNITION else transcribe_with_vosk()
@@ -126,22 +120,16 @@ def ai(USE_SPEECH_RECOGNITION):
         for text in transcription_generator:
             print(f"You said: {text}")
 
-            if text.lower() == 'command done':
+            if text.lower() == 'exit':
                 save_chat_history(chat_history)
-                break  # Exit the transcription loop gracefully
-
-            if text.lower() == 'command eject':
-                if system() == 'Linux':
-                    _tmp = os.system(f'unmount /media/{get_user()}/bootloader')
-                    if _tmp == 0: ohbot.say('ejected')
-                    else: ohbot.say('failed to eject')
+                sys.exit(0)
 
             if text:
                 chat_history.append({'role': 'user', 'content': text})
                 thr = Thread(target=loading)
                 thr.start()
 
-                response = ollama.chat(model='Zeus', messages=chat_history,options={'temperature': 0.7})
+                response = ollama.chat(model='Zeus', messages=chat_history, options={'temperature': 0.7})
                 isload = 1
                 thr.join()
 
@@ -150,9 +138,12 @@ def ai(USE_SPEECH_RECOGNITION):
                 print(say)
 
                 chat_history.append({'role': 'assistant', 'content': say})
-
                 save_chat_history(chat_history)
+
                 ohbot.say(say)
 
     except KeyboardInterrupt:
         pass
+
+if __name__ == "__main__":
+    ai(USE_SPEECH_RECOGNITION=True)  # or True if using Google SR
