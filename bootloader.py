@@ -86,6 +86,10 @@ def main():
                     print('Exit order received. Quitting...')
                     os.remove(kill_path)
                     return
+                if process.poll() is not None:
+                    print("Process terminated unexpectedly.")
+                    input("Press Enter to restart...")
+                    process = subprocess.Popen(['python', file_path])
 
                 time.sleep(1)
 

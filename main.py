@@ -1,5 +1,5 @@
 from threading import Thread
-from ohbotfix import ohbot
+from ohbot import ohbot
 from ai import ai
 from look import look
 from os.path import exists
@@ -27,18 +27,5 @@ def is_site_up(url):
         # If there is any request exception, the site is considered down.
         return False
 
-if not exists('vosk'):
- website_url = "https://www.google.com/speech-api/v2/recognize"
- ohbot.say('Playing ping pong with Larry Page')
- print('Playing ping pong with Larry Page')
- if is_site_up(website_url):
-    print(f"{website_url} is up.")
-    ohbot.say('connected')
-    print('connected')
-    start_ai(True)
- else:
-    print(f"{website_url} is down.")
-    ohbot.say('ha ha i won')
-    print('ha ha i won')
-    start_ai(False)
+if not exists('vosk'): start_ai(True)
 else: start_ai(False)
