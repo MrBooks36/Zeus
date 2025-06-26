@@ -13,13 +13,25 @@ import re
 from platform import system
 from ollama import Client
 from time import sleep
+import pyttsx3
 
-ohbot.setVoice('-vDavid')
+# Initialize SAPI speech engine
+engine = pyttsx3.init()
+engine.setProperty('rate', 180)
+engine.setProperty('volume', 1.0)
+for voice in engine.getProperty('voices'):
+    if "David" in voice.name:
+        engine.setProperty('voice', voice.id)
+        break
 
 PORT = 11434
 TIMEOUT = 0.5
 CHAT_HISTORY_FILE = os.path.join(os.path.dirname(sys.modules["__main__"].__file__), "chat_history.json")
 VOSK_MODEL_PATH = os.path.join(os.path.expanduser("~"), "Documents", "vosk-model")
+
+def speak(text):
+    engine.say(text)
+    engine.runAndWait()
 
 def remove_emojis(input_string):
     emoji_pattern = re.compile(
@@ -103,14 +115,14 @@ def transcribe_with_speech_recognition(stop_flag):
             except sr.WaitTimeoutError:
                 continue
             except sr.RequestError as e:
-                ohbot.say('Google Speech Recognition failed')
+                speak('Google Speech Recognition failed')
                 print(f'Google Speech Error: {e}')
                 with open('vosk', 'w') as file:
                     file.close()
                 break
             except Exception as e:
                 if not stop_flag["stop"]:
-                    ohbot.say('google crapped its dacks, switching to Vosk')
+                    speak('google crapped its dacks, switching to Vosk')
                     print(f'Unexpected error with Google STT: {e}')
                     with open('vosk', 'w') as file:
                         file.close()
@@ -177,7 +189,7 @@ def ai(USE_SPEECH_RECOGNITION):
             print(f"You said: {text}")
 
             if text.lower() == 'exit':
-                stop_flag["stop"] = True  # signal the generator to stop listening
+                stop_flag["stop"] = True
                 save_chat_history(chat_history)
                 break
 
@@ -185,9 +197,9 @@ def ai(USE_SPEECH_RECOGNITION):
                 if system() == 'Linux':
                     _tmp = os.system(f'unmount /media/{get_user()}/bootloader')
                     if _tmp == 0:
-                        ohbot.say('ejected')
+                        speak('ejected')
                     else:
-                        ohbot.say('failed to eject')
+                        speak('failed to eject')
 
             if text:
                 chat_history.append({'role': 'user', 'content': text})
@@ -205,14 +217,13 @@ def ai(USE_SPEECH_RECOGNITION):
                 chat_history.append({'role': 'assistant', 'content': say})
                 save_chat_history(chat_history)
 
-                ohbot.say(say)
+                speak(say)
 
     except KeyboardInterrupt:
         pass
 
-    # Ensure cleanup
     save_chat_history(chat_history)
-    ohbot.say("Session ended.")
+    speak("Session ended.")
 
 if __name__ == "__main__":
     ai(USE_SPEECH_RECOGNITION=True)
