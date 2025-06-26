@@ -9,6 +9,7 @@ import pyaudio
 import sys
 import speech_recognition as sr
 import re
+from platform import system
 ohbot.setVoice('-vDavid')
 
 CHAT_HISTORY_FILE = os.path.join(os.path.dirname(sys.modules["__main__"].__file__), "chat_history.json")
@@ -93,6 +94,8 @@ def transcribe_with_speech_recognition():
                 yield text
             except sr.UnknownValueError:
                 continue
+            except SystemExit:
+                pass
             except: 
                 ohbot.say('google craped its dacks, restart with Vosk')
                 print('google craped its dacks, restart with Vosk')
