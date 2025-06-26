@@ -1,7 +1,8 @@
 from ohbot import ohbot
-import ollama
 import os
-from time import sleep
+import socket
+import ipaddress
+import concurrent.futures
 import json
 from threading import Thread
 from vosk import Model, KaldiRecognizer
@@ -10,8 +11,13 @@ import sys
 import speech_recognition as sr
 import re
 from platform import system
+from ollama import Client
+from time import sleep
+
 ohbot.setVoice('-vDavid')
 
+PORT = 11434
+TIMEOUT = 0.5
 CHAT_HISTORY_FILE = os.path.join(os.path.dirname(sys.modules["__main__"].__file__), "chat_history.json")
 VOSK_MODEL_PATH = os.path.join(os.path.expanduser("~"), "Documents", "vosk-model")
 
@@ -80,64 +86,115 @@ def transcribe_with_vosk():
         stream.close()
         audio.terminate()
 
-def transcribe_with_speech_recognition():
+def transcribe_with_speech_recognition(stop_flag):
     recognizer = sr.Recognizer()
     microphone = sr.Microphone()
 
     with microphone as source:
         recognizer.adjust_for_ambient_noise(source)
         print("Listening with SpeechRecognition...")
-        while True:
-            audio = recognizer.listen(source)
+        while not stop_flag["stop"]:
             try:
+                audio = recognizer.listen(source, timeout=5)
                 text = recognizer.recognize_google(audio)
                 yield text
             except sr.UnknownValueError:
                 continue
-            except SystemExit:
-                pass
-            except: 
-                ohbot.say('google craped its dacks, restart with Vosk')
-                print('google craped its dacks, restart with Vosk')
+            except sr.WaitTimeoutError:
+                continue
+            except sr.RequestError as e:
+                ohbot.say('Google Speech Recognition failed')
+                print(f'Google Speech Error: {e}')
                 with open('vosk', 'w') as file:
                     file.close()
+                break
+            except Exception as e:
+                if not stop_flag["stop"]:
+                    ohbot.say('google crapped its dacks, switching to Vosk')
+                    print(f'Unexpected error with Google STT: {e}')
+                    with open('vosk', 'w') as file:
+                        file.close()
+                break
 
-                return
+def is_ollama_running(ip):
+    try:
+        with socket.create_connection((ip, PORT), timeout=TIMEOUT):
+            return True
+    except:
+        return False
+
+def scan_network():
+    local_ip = socket.gethostbyname(socket.gethostname())
+    subnet = ".".join(local_ip.split(".")[:3]) + ".0/24"
+    found_ips = []
+
+    print(f"Scanning subnet {subnet} for Ollama servers...")
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=100) as executor:
+        futures = {
+            executor.submit(is_ollama_running, str(ip)): str(ip)
+            for ip in ipaddress.IPv4Network(subnet, strict=False)
+            if str(ip).split('.')[-1] not in ['0', '255']
+        }
+        for future in concurrent.futures.as_completed(futures):
+            ip = futures[future]
+            if future.result():
+                found_ips.append(ip)
+
+    return found_ips
 
 def ai(USE_SPEECH_RECOGNITION):
     global isload
     isload = 0
     chat_history = load_chat_history()
+    stop_flag = {"stop": False}
 
-    transcription_generator = (
-        transcribe_with_speech_recognition() if USE_SPEECH_RECOGNITION else transcribe_with_vosk()
-    )
-
+    ips = scan_network()
     with open(os.path.join(os.path.dirname(__file__), 'ai.txt'), 'r') as file:
         role = file.read()
 
-    ollama.create(model='Zeus', from_='gemma3:1b', system=role)
+    if ips:
+        ollama_host = f"http://{ips[0]}:{PORT}"
+        client = Client(host=ollama_host)
+        print(f"✅ Connected to remote Ollama at {ips[0]}")
+        client.create(model='Zeus', from_='llama3.2', system=role)
+    else:
+        ollama_host = "http://localhost:11434"
+        client = Client(host=ollama_host)
+        print("⚠️ No remote Ollama found. Using local instance.")
+        client.create(model='Zeus', from_='gemma3:1b', system=role)
+
+    MODEL_NAME = "Zeus"
+
+    transcription_generator = (
+        transcribe_with_speech_recognition(stop_flag) if USE_SPEECH_RECOGNITION else transcribe_with_vosk()
+    )
 
     try:
         for text in transcription_generator:
+            if not text:
+                continue
             print(f"You said: {text}")
 
             if text.lower() == 'exit':
+                stop_flag["stop"] = True  # signal the generator to stop listening
                 save_chat_history(chat_history)
-                break  # Exit the transcription loop gracefully
+                break
 
             if text.lower() == 'command eject':
                 if system() == 'Linux':
                     _tmp = os.system(f'unmount /media/{get_user()}/bootloader')
-                    if _tmp == 0: ohbot.say('ejected')
-                    else: ohbot.say('failed to eject')
+                    if _tmp == 0:
+                        ohbot.say('ejected')
+                    else:
+                        ohbot.say('failed to eject')
 
             if text:
                 chat_history.append({'role': 'user', 'content': text})
                 thr = Thread(target=loading)
                 thr.start()
 
-                response = ollama.chat(model='Zeus', messages=chat_history, options={'temperature': 0.7})
+                response = client.chat(model=MODEL_NAME, messages=chat_history, options={'temperature': 0.7})
                 isload = 1
                 thr.join()
 
@@ -153,5 +210,9 @@ def ai(USE_SPEECH_RECOGNITION):
     except KeyboardInterrupt:
         pass
 
+    # Ensure cleanup
+    save_chat_history(chat_history)
+    ohbot.say("Session ended.")
+
 if __name__ == "__main__":
-    ai(USE_SPEECH_RECOGNITION=True)  # or True if using Google SR
+    ai(USE_SPEECH_RECOGNITION=True)
