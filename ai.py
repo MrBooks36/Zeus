@@ -93,10 +93,9 @@ def transcribe_with_speech_recognition():
                 yield text
             except sr.UnknownValueError:
                 continue
-            except SystemExit: pass
-            except:
-                ohbot.say('Google crashed. Restart with Vosk.')
-                print('Google crashed. Restart with Vosk.')
+            except: 
+                ohbot.say('google craped its dacks, restart with Vosk')
+                print('google craped its dacks, restart with Vosk')
                 with open('vosk', 'w') as file:
                     file.close()
 
@@ -122,7 +121,13 @@ def ai(USE_SPEECH_RECOGNITION):
 
             if text.lower() == 'exit':
                 save_chat_history(chat_history)
-                sys.exit(0)
+                break  # Exit the transcription loop gracefully
+
+            if text.lower() == 'command eject':
+                if system() == 'Linux':
+                    _tmp = os.system(f'unmount /media/{get_user()}/bootloader')
+                    if _tmp == 0: ohbot.say('ejected')
+                    else: ohbot.say('failed to eject')
 
             if text:
                 chat_history.append({'role': 'user', 'content': text})
